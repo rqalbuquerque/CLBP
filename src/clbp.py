@@ -1,8 +1,7 @@
 import numpy as np
-from scipy import interpolate
 import cv2
 import math
-import CompletedLocalBinaryPattern
+from CompletedLocalBinaryPattern import CompletedLocalBinaryPattern
 import argparse
 import os.path
 import sys
@@ -29,7 +28,7 @@ if __name__ == "__main__":
 	ap.add_argument("-r", "--radius", required=False,
 		default=1,
 		help="radius from center pixel to neighbor pixels (default=1)")
-	ap.add_argument("-p", "--pixels", required=False, 
+	ap.add_argument("-p", "--npixels", required=False, 
 		default=8,
 		help="number of neighbor pixels around of center pixel (default=8)")
 	# ap.add_argument("-f", "--feature", required=False, 
@@ -43,9 +42,10 @@ if __name__ == "__main__":
 	# 		['CLBP_S_riu2/M_riu2/C','clbp_s/m/c'],
 	# 		['(default)','lbp']],
 	# 		headers=['Feature mapping','code']))
-	ap.add_argument("-f", "--feature", required=False, 
+	ap.add_argument("-f", "--feature", required=True, 
 		default="lbp",
-		help="(options: lbp, clbp_s, clbp_m, clbp_m/c, clbp_s_m/c, clbp_s/m, clbp_s_m/c, clbp_s/m/c")
+		help="(options(mode 1): lbp, clbp_s, clbp_s_riu2, clbp_m, clbp_m_riu2, clbp_c" + 
+			"(options(mode 2): lbp, clbp_s, clbp_m, clbp_m/c, clbp_s_m/c, clbp_s/m, clbp_s_m/c, clbp_s/m/c")
 	args = vars(ap.parse_args())
 
 	# verify args
@@ -61,3 +61,23 @@ if __name__ == "__main__":
 			sys.exit("Error! Folder " + args["testing"] + " not found!")				
 	else:
 		sys.exit("Mode " + args["mode"] + " is not valid!")		
+
+	# run
+	if args["mode"] == "m1":
+
+		file = args["testing"]
+		img = cv2.imread(file)
+		gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+		radius = int(args["radius"])
+		numPixels = int(args["npixels"])
+		mapping = args["feature"]
+		
+		clbp = CompletedLocalBinaryPattern(radius,numPixels,mapping)
+		lpImg = np.array(clbp.genLocalPatterns(gray),dtype=np.uint8)
+
+		# display the local patterns
+		cv2.imshow("Image", gray)
+		cv2.imshow("Local patterns", lpImg)
+		cv2.waitKey(0)
+

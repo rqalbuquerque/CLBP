@@ -1,0 +1,1 @@
+python clbp.py -m "m1" -e "C:/Users/rqa/Desktop/CLBP/database/t2.jpg" -f "lbp"
