@@ -33,9 +33,17 @@ class CompletedLocalBinaryPattern:
     def getNeighboringPixels(self,img,R,P,x,y):
         pixels = []
 
+        indexes = np.array(list(range(0,P)),dtype=np.float)
+        dy = R * np.cos(2 * np.pi * indexes / P)
+        dx = -R * np.sin(2 * np.pi * indexes / P)
+
+        dx = np.where(abs(dx) < 5.0e-10, 0, dx)
+        dy = np.where(abs(dy) < 5.0e-10, 0, dy)
+
         for point in range(0, P):
-            r = x + R * math.cos(2 * math.pi * point / P)
-            c = y - R * math.sin(2 * math.pi * point / P)
+            r = x + dx[point]
+            c = y + dy[point]
+
             if r < 0 or c < 0:
                 pixels.append(0)
                 continue            
@@ -133,13 +141,13 @@ class CompletedLocalBinaryPattern:
             for y in range(0, len(img[0])):
                 center = img[x,y]
                 pixels = self.getNeighboringPixels(img,R,P,x,y)              
-                ld[x,y,:] = pixels-center
+                ld[x,y,0:P] = pixels-center
 
         return ld
 
     def calcTransitions(self,pattern,P):
         u_value = np.absolute(pattern[:,:,P-1]-pattern[:,:,0])
-        u_value += np.sum(np.absolute(pattern[:,:,1:P-1]-pattern[:,:,0:P-2]),2)
+        u_value += np.sum(np.absolute(pattern[:,:,1:P]-pattern[:,:,0:P-1]),2)
         return u_value
 
     def LDSMT(self,ld):
@@ -150,13 +158,13 @@ class CompletedLocalBinaryPattern:
     def CLBP_S(self,sp,P):
         sp = np.where(sp >= 0, 1, 0)
         pp2 = 2**(np.array(list(range(0,P))))
-        return np.dot(sp,pp2.T)
+        return np.dot(sp,pp2)
 
     def CLBP_M(self,mp,P):
         c = np.mean(mp)
         tp = np.where(mp >= c, 1, 0)
         pp2 = (np.array(list(range(0,P))))
-        return np.dot(tp,pp2.T)
+        return np.dot(tp,pp2)
 
     def CLBP_C(self,im):
         c = np.mean(im)
@@ -165,9 +173,9 @@ class CompletedLocalBinaryPattern:
     def CLBP_S_riu2(self,sp,P):
         sp = np.where(sp >= 0, 1, 0)
         pp2 = np.array([1]*P)
-        sp_total = np.dot(sp,pp2.T)
+        sp_total = np.dot(sp,pp2)
         u_value = self.calcTransitions(sp,P)
-        return np.where(u_value <= 2, sp_total, P-1)
+        return np.where(u_value <= 2, sp_total, P+1)
 
     def CLBP_M_riu2(self,mp,P):
         c = np.mean(mp)
@@ -175,7 +183,7 @@ class CompletedLocalBinaryPattern:
         pp2 = np.array([1]*P)
         tp_total = np.dot(tp,pp2.T)
         u_value = self.calcTransitions(tp,P)
-        return np.where(u_value <= 2, tp_total, P-1)
+        return np.where(u_value <= 2, tp_total, P+1)
 
     def genLocalPatterns(self,img):
         dp = self.calcLocalDifferences(img,self.numPoints,self.radius)
@@ -204,8 +212,9 @@ class CompletedLocalBinaryPattern:
 
         # "LBP"
         if self.mapping == "lbp":                    
-            hist = self.CLBP_S(sp,self.numPoints)
-            hist = lbp.flatten()
+            lbp = self.CLBP_S(sp,self.numPoints)
+            bins = list(range(0,2**self.numPoints))
+            (hist, _) = np.histogram(lbp.ravel(), bins=np.arange(0, 2**self.numPoints))
         # "CLBP_S_riu2"
         elif self.mapping == "clbp_s":              
             clbp_s_riu2 = self.CLBP_S_riu2(sp,self.numPoints)

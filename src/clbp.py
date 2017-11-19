@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import math
+#from sklearn.neighbors import NearestNeighbors
 from CompletedLocalBinaryPattern import CompletedLocalBinaryPattern
 import argparse
 import os.path
@@ -81,3 +82,30 @@ if __name__ == "__main__":
 		cv2.imshow("Local patterns", lpImg)
 		cv2.waitKey(0)
 
+	elif args["mode"] == "m2":
+
+		data = []
+		labels = []
+
+		radius = int(args["radius"])
+		numPixels = int(args["npixels"])
+		mapping = args["feature"]
+
+		clbp = CompletedLocalBinaryPattern(radius,numPixels,mapping)
+
+		for imagePath in paths.list_images(args["training"]):
+			image = cv2.imread(imagePath)
+			gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+			hist = clbp.describe(gray)
+
+			labels.append(imagePath.split("/")[-2])
+			data.append(hist)
+
+		clf = neighbors.KNeighborsClassifier(1, weights="distance")
+		clf.fit(data, labels)
+
+		for imagePath in paths.list_images(args["testing"]):
+			image = cv2.imread(imagePath)
+			gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+			hist = desc.describe(gray)
+			prediction = model.predict(hist)[0]
